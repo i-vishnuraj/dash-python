@@ -102,4 +102,4 @@ def update_figure(col,graph_type,top_val):
     return fig
 
 if __name__=='__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True,port="8010",host="127.0.0.1")
