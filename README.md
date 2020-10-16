@@ -5,4 +5,4 @@ Here I have tried to create graphs using dash from plotly. The goal is to create
 
 #Inspiration from autoplotter package
 
-Currently the script provides basic bar, pie and heatmap across data features. More additions in progress.
+Currently the script provides basic bar, pie and heatmap across data features. Additional graphs in progress.
