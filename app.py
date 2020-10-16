@@ -15,7 +15,7 @@ import dash_table
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, title="Analytics Dashboard",external_stylesheets=external_stylesheets)
 
 file_name = "sample_data.xlsx"
 
@@ -46,9 +46,23 @@ if len(df_datefields):
 df_columns = df.columns
 
 app.layout = html.Div([
-    html.H2('Analytics Dashboard',style={'text-align':'center'}),
+    html.H2('Analytics Dashboard',style={'text-align':'center','height':'30%','fontFamily':'Arial','fontSize' : '200%'}),
     html.Div([
-    html.H6('X-axis', className="four columns"),
+
+    html.Div([
+    html.H6('Input Create Date Column'),
+    dcc.Dropdown(id="column-input-date",
+                options=[
+                    {'label':i,'value':i} for i in df_datefields],
+                multi=False,
+                value=df_datefields[0],
+                style={'width':"60%"}
+                ),
+    html.Br(),
+    ],style={'backgroundColor':'lavender','fontFamily':'Arial'}),
+
+    html.Div([
+    html.H6('X-axis'),
     dcc.Dropdown(id="column-select1",
                 options=[
                     {'label':i,'value':i} for i in df_columns if i != "index"],
@@ -56,16 +70,18 @@ app.layout = html.Div([
                 value=df_columns[0],
                 style={'width':"60%"}
                 ),
-    html.Br(),
-    html.Label('Top X Value Filter (*- 0 value shows all)',style={'textAlign': 'left'}, className="four columns"),
+    html.Label('Top X Value Filter (*- 0 value shows all)',style={'textAlign': 'left','fontSize' : '80%'}),
     dcc.Input(
             id="topx", type="number",
             debounce=True, placeholder="Debounce True",
-            value=5
+            value=5,
+            style={'width':"35%"}
         ),
     html.Br(),
-    html.Br(),
-    html.H6('Y-axis', className="four columns"),
+    ],style={'backgroundColor':'azure','fontFamily':'Arial'}),
+
+    html.Div([
+    html.H6('Y-axis'),
     dcc.Dropdown(id="column-select2",
                 options=[
                     {'label':i,'value':i} for i in df_columns if i != "index" and type(i) != "object"],
@@ -73,16 +89,21 @@ app.layout = html.Div([
                 value=df_columns[0],
                 style={'width':"60%"}
                 ),
-    html.Br(),
-    html.Label('Top Y Value Filter (*- 0 value shows all)',style={'textAlign': 'left'}, className="four columns"),
+    html.Label('Top Y Value Filter (*- 0 value shows all)',style={'textAlign': 'left','fontSize' : '80%'}),
     dcc.Input(
             id="topy", type="number",
             debounce=True, placeholder="Debounce True",
-            value=5
+            value=5,
+            style={'width':"35%"}
         ),
-    ],className='four columns',),
+    html.Br(),
+    ],style={'backgroundColor':'palegreen','fontFamily':'Arial'}),
+
+    ],className='five columns'),
+
     html.Div([
-    html.H6('Type of Graph', className="four columns"),
+    html.Div([
+    html.H6('Type of Graph', className="five columns"),
     dcc.Dropdown(id="graph-select",
                 options=[
                     {'label':"Bar",'value':"bar"},
@@ -92,19 +113,52 @@ app.layout = html.Div([
                 value="bar",
                 style={'width':"60%"}
                 ),
-    ],className='four columns',),
+    html.Br(),
+    ],style={'backgroundColor':'azure','fontFamily':'Arial'}),
+    html.Div([
+    html.H6('Label Style'),
+    dcc.Dropdown(id="column-label-style",
+                options=[
+                    {'label':"Arial",'value':"Arial"},
+                    {'label':"Courier",'value':"Courier"},
+                    {'label':"Times New Roman",'value':"Times New Roman"},
+                    {'label':"Helvetica",'value':"Helvetica"}
+                    ],
+                multi=False,
+                value="Arial",
+                style={'width':"60%"}
+                ),
+    html.Br(),
+    dcc.Input(
+            id="label-size", type="number",
+            debounce=True, placeholder="Debounce True",
+            value=10,
+            style={'width':"36%"}
+        ),
+    html.Br(),
+
+    ],style={'backgroundColor':'lightblue','fontFamily':'Arial'}),
+    ],className='five columns'),
+
     html.Div(id="output-container",children=[]),
     html.Br(),
+
     html.Div([
-    dcc.Graph(id="my_first_dash_graph",figure={})
-    ],className='twelve columns',)
-])
+    html.Hr(),
+    dcc.Graph(id="my_first_dash_graph",figure={}),
+    html.Br(),
+    html.Br()
+    ],className='eleven columns',)
+
+],style={'backgroundColor':'white'})
 
 @app.callback(
     Output('my_first_dash_graph', 'figure'),
     [Input('column-select1', 'value'), Input('column-select2', 'value'),
-    Input('graph-select', 'value'), Input('topx', 'value'), Input('topy', 'value')])
-def update_figure(col1,col2,graph_type,topx_val,topy_val):
+    Input('graph-select', 'value'), Input('topx', 'value'), Input('topy', 'value'), Input('column-input-date', 'value'),
+    Input('column-label-style', 'value'), Input('label-size', 'value')])
+def update_figure(col1,col2,graph_type,topx_val,topy_val,sort_date,label_style,label_size):
+    font_dict=dict(family=label_style,size=label_size,color="black")
     if "Repetitive" in col1:
         value_counts = df[df["Repetitive/Nonrepetitive"] == "Repetitive"][col1].value_counts(dropna=True, sort=True)
         # if col2 == "":
@@ -127,7 +181,10 @@ def update_figure(col1,col2,graph_type,topx_val,topy_val):
         title=str(col1)+" Distribution",
         xaxis_title=col1,
         yaxis_title="Count",
-        showlegend=False)
+        showlegend=False,
+        font=font_dict,
+        plot_bgcolor='rgb(255,255,255)'
+        )
     elif graph_type == "pie":
         if topx_val > 0:
             fig = px.pie(df_value_counts[:topx_val], values="count_cat", names="Category",hole=0.4)
@@ -136,12 +193,18 @@ def update_figure(col1,col2,graph_type,topx_val,topy_val):
         fig.update_traces(textposition='outside', textinfo='label+text+percent')
         fig.update_layout(transition_duration=500,
         title=str(col1)+" Distribution",
-        showlegend=False)
+        showlegend=False,
+        font=font_dict,
+        plot_bgcolor='rgb(255,255,255)'
+        )
     elif graph_type == "heatmap":
         def df_to_plotly(df):
             return {'z': df.values.tolist(), 'x': df.columns.tolist(), 'y': df.index.tolist()}
         fig = go.Figure(data=go.Heatmap(df_to_plotly(value_counts_pivot)))
-        #fig.show()
+        fig.update_layout(
+        font=font_dict,
+        plot_bgcolor='rgb(255,255,255)'
+        )
     return fig
 
 if __name__=='__main__':
