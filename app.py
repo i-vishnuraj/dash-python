@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
 import dash
 import dash_core_components as dcc
@@ -25,8 +26,15 @@ elif "xls" in file_name:
 
 df.reset_index(inplace=True)
 #print(df[:5])
+
+#Add a reference column
+for i in range(1,len(df)+1):
+    df["Row Id"] = i
+
+#Capture datetime fields
 df_datefields = [i for i in df.columns if np.issubdtype(df[i].dtype, np.datetime64)]
 
+#Add new hourly and monthly fields
 if len(df_datefields):
     for i in df_datefields:
         new_colmonth_name = i + "_Month"
@@ -98,10 +106,12 @@ app.layout = html.Div([
     Input('graph-select', 'value'), Input('topx', 'value'), Input('topy', 'value')])
 def update_figure(col1,col2,graph_type,topx_val,topy_val):
     if "Repetitive" in col1:
-        if col2 == "":
-            value_counts = df[df["Repetitive/Nonrepetitive"] == "Repetitive"][col1].value_counts(dropna=True, sort=True)
-        else:
-            pass
+        value_counts = df[df["Repetitive/Nonrepetitive"] == "Repetitive"][col1].value_counts(dropna=True, sort=True)
+        # if col2 == "":
+        #     value_counts = df[df["Repetitive/Nonrepetitive"] == "Repetitive"][col1].value_counts(dropna=True, sort=True)
+        if col2 != "":
+            #value_counts = df[df["Repetitive/Nonrepetitive"] == "Repetitive"].groupby(col1)[col2].value_counts(dropna=True, sort=True)
+            value_counts_pivot = pd.pivot_table(df[df["Repetitive/Nonrepetitive"] == "Repetitive"], index=[col1],columns=[col2], aggfunc='count', fill_value=0)['Row Id']
     else:
         value_counts = df[col1].value_counts(dropna=True, sort=True)
     # solution here
@@ -127,6 +137,11 @@ def update_figure(col1,col2,graph_type,topx_val,topy_val):
         fig.update_layout(transition_duration=500,
         title=str(col1)+" Distribution",
         showlegend=False)
+    elif graph_type == "heatmap":
+        def df_to_plotly(df):
+            return {'z': df.values.tolist(), 'x': df.columns.tolist(), 'y': df.index.tolist()}
+        fig = go.Figure(data=go.Heatmap(df_to_plotly(value_counts_pivot)))
+        #fig.show()
     return fig
 
 if __name__=='__main__':
